@@ -235,13 +235,6 @@ async def end(interaction: discord.Interaction):
             inline=False
         )
 
-    # Add a blank line
-    embed.add_field(
-        name="\u200b",
-        value="\u200b",
-        inline=False
-    )
-
     # Then the final note
     embed.add_field(
         name="\u200b",
