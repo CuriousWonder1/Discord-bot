@@ -214,7 +214,7 @@ async def end(interaction: discord.Interaction):
 
     description_text = (
         "This channel is temporarily closed until an event is being held. It will reopen once the event starts.\n"
-        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821\n\n"
+        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821\n"
     )
 
     if upcoming:
@@ -235,13 +235,14 @@ async def end(interaction: discord.Interaction):
             inline=False
         )
 
-        # Add a blank line
+    # Add a blank line
     embed.add_field(
         name="\u200b",
         value="\u200b",
         inline=False
     )
-    
+
+    # Then the final note
     embed.add_field(
         name="\u200b",
         value="Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
@@ -252,6 +253,7 @@ async def end(interaction: discord.Interaction):
         await interaction.channel.send(embed=embed)
     except discord.InteractionResponded:
         pass
+
 
 
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
