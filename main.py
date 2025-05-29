@@ -1,3 +1,5 @@
+Can you make the /end command remove the participant role from everyone that has the role?
+
 import discord
 from discord.ext import commands
 import os
@@ -182,30 +184,15 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         bot.loop.create_task(announce_event(event_data))
         await interaction.followup.send(f"✅ Event '{name}' has been posted!", ephemeral=True)
 
-
-@bot.tree.command(name="end", description="Sends the event info and clears the Participant role", guild=discord.Object(id=GUILD_ID))
+        
+@bot.tree.command(name="end", description="Sends the event info", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def end(interaction: discord.Interaction):
     now = datetime.now(tz=timezone.utc)
     current_events = load_events()
 
-    await interaction.response.send_message("Ending event and removing Participant role.", ephemeral=True)
+    await interaction.response.send_message("Sending event over message.", ephemeral=True)
 
-    # Remove "Participant" role from everyone who has it
-    guild = interaction.guild
-    participant_role = discord.utils.get(guild.roles, name="Participant")
-    if participant_role:
-        for member in guild.members:
-            if participant_role in member.roles:
-                try:
-                    await member.remove_roles(participant_role, reason="Event ended")
-                    print(f"Removed Participant role from {member.display_name}")
-                except Exception as e:
-                    print(f"Failed to remove role from {member.display_name}: {e}")
-    else:
-        print("Participant role not found.")
-
-    # Prepare and send the embed
     for e in current_events:
         if isinstance(e["start_time"], str):
             e["start_time"] = datetime.fromisoformat(e["start_time"])
@@ -235,13 +222,6 @@ async def end(interaction: discord.Interaction):
             inline=False
         )
 
-        # Add a blank line
-    embed.add_field(
-        name="\u200b",
-        value="\u200b",
-        inline=False
-    )
-    
     embed.add_field(
         name="\u200b",
         value="Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
@@ -250,8 +230,11 @@ async def end(interaction: discord.Interaction):
 
     try:
         await interaction.channel.send(embed=embed)
+        await interaction.response.defer()
     except discord.InteractionResponded:
         pass
+
+
 
 
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
