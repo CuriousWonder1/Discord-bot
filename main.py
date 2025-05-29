@@ -235,11 +235,19 @@ async def end(interaction: discord.Interaction):
             inline=False
         )
 
-    embed.add_field(
-        name="\u200b",
-        value="/n/ Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
-        inline=False
-    )
+# Add a blank line
+embed.add_field(
+    name="\u200b",
+    value="\u200b",
+    inline=False
+)
+
+# Then the final note
+embed.add_field(
+    name="\u200b",
+    value="Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
+    inline=False
+)
 
     try:
         await interaction.channel.send(embed=embed)
