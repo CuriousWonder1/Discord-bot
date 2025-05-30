@@ -61,9 +61,6 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
-    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
-    path = EVENTS_FILE
-    branch = "main"
     if not token:
         print("❌ GITHUB_TOKEN not set!")
         return []
@@ -73,9 +70,6 @@ def fetch_github_events():
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        content = response.json()["content"]
-        return json.loads(base64.b64decode(content).decode())
-    return []
         try:
             content = response.json()["content"]
             return json.loads(base64.b64decode(content).decode())
