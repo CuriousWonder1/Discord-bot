@@ -28,11 +28,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    print("🔁 Ping received from UptimeRobot (or browser)")
+    print("\U0001F501 Ping received from UptimeRobot (or browser)")
     return "Bot is online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000
+    app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
     t = Thread(target=run)
@@ -44,9 +44,9 @@ async def on_ready():
     guild = discord.Object(id=GUILD_ID)
     try:
         synced = await bot.tree.sync(guild=guild)
-        print(f"✅ Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
+        print(f"\u2705 Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
     except Exception as e:
-        print(f"❌ Sync failed: {e}")
+        print(f"\u274C Sync failed: {e}")
 
     await schedule_upcoming_events()
 
@@ -59,14 +59,10 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
-    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
-    path = EVENTS_FILE
-    branch = "main"
     if not token:
-        print("❌ GITHUB_TOKEN not set!")
+        print("\u274C GITHUB_TOKEN not set!")
         return []
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
@@ -74,40 +70,32 @@ def fetch_github_events():
     if response.status_code == 200:
         content = response.json()["content"]
         return json.loads(base64.b64decode(content).decode())
-    return []
-    
     else:
-        print(f"❌ Failed to fetch events.json: {response.status_code}")
+        print(f"\u274C Failed to fetch events.json: {response.status_code}")
         print("Response:", response.text)
         return []
 
 def commit_github_events(data):
     token = os.getenv("GITHUB_TOKEN")
-    repo = "USERNAME/REPO"
-    path = EVENTS_FILE
     branch = "main"
     if not token:
-        print("❌ GITHUB_TOKEN not set!")
+        print("\u274C GITHUB_TOKEN not set!")
         return
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
-    # Get current file SHA for update
     get_resp = requests.get(url, headers=headers)
-    sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
     if get_resp.status_code == 200:
         sha = get_resp.json().get("sha")
     else:
-        print(f"⚠️ Couldn't retrieve current file SHA: {get_resp.status_code}")
+        print(f"\u26A0\uFE0F Couldn't retrieve current file SHA: {get_resp.status_code}")
         print("Response:", get_resp.text)
         sha = None
 
-    # Prepare content
     content = base64.b64encode(json.dumps([
         {**e, "start_time": e["start_time"].isoformat()} for e in data
     ], indent=4).encode()).decode()
@@ -116,20 +104,17 @@ def commit_github_events(data):
         "message": "Update events",
         "content": content,
         "branch": branch
-        "branch": "main"
     }
     if sha:
         payload["sha"] = sha
 
     put_resp = requests.put(url, headers=headers, json=payload)
-    if put_resp.status_code not in (200, 201):
-        print("❌ Failed to update GitHub file:", put_resp.text)
     if put_resp.status_code in (200, 201):
-        print("✅ events.json updated on GitHub.")
+        print("\u2705 events.json updated on GitHub.")
     else:
-        print("❌ Failed to update events.json on GitHub:")
+        print("\u274C Failed to update events.json on GitHub:")
         print("Status:", put_resp.status_code)
-
+        print("Response:", put_resp.text)
 
 def load_events():
     data = fetch_github_events()
@@ -162,11 +147,7 @@ async def announce_event(event):
         print(f"Failed to get guild {GUILD_ID} for event {event['name']}")
         return
 
-    channel = None
-    for ch in guild.text_channels:
-        if ch.permissions_for(guild.me).send_messages:
-            channel = ch
-            break
+    channel = next((ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages), None)
     if channel is None:
         print(f"No suitable channel found for event {event['name']}")
         return
@@ -181,11 +162,11 @@ async def announce_event(event):
     )
 
     if event.get("reward1"):
-        embed.add_field(name="🎁 1st Place Reward", value=event["reward1"], inline=False)
+        embed.add_field(name="\U0001F381 1st Place Reward", value=event["reward1"], inline=False)
     if event.get("reward2"):
-        embed.add_field(name="🎁 2nd Place Reward", value=event["reward2"], inline=False)
+        embed.add_field(name="\U0001F381 2nd Place Reward", value=event["reward2"], inline=False)
     if event.get("reward3"):
-        embed.add_field(name="🎁 3rd Place Reward", value=event["reward3"], inline=False)
+        embed.add_field(name="\U0001F381 3rd Place Reward", value=event["reward3"], inline=False)
 
     embed.add_field(
         name="",
@@ -196,7 +177,7 @@ async def announce_event(event):
     embed.set_footer(text=f"Created by {event['creator']['name']}")
 
     message = await channel.send(embed=embed)
-    await message.add_reaction("✅")
+    await message.add_reaction("\u2705")
 
     event["started"] = True
     save_events()
@@ -209,6 +190,7 @@ async def schedule_upcoming_events():
             event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
             bot.loop.create_task(announce_event(event))
+
 
 @bot.tree.command(name="createevent", description="Create an event", guild=discord.Object(id=GUILD_ID))
 @staff_only()
