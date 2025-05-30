@@ -50,5 +50,18 @@
             "id": 966933822522396722,
             "name": "curiouswonders"
         }
+    },
+    {
+        "name": "Ant Life event",
+        "info": "342423",
+        "reward1": "100 protein",
+        "reward2": "80 protein",
+        "reward3": "50 protein",
+        "start_time": "2025-05-30T01:18:53.625278+00:00",
+        "started": false,
+        "creator": {
+            "id": 966933822522396722,
+            "name": "curiouswonders"
+        }
     }
 ]
