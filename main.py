@@ -236,13 +236,19 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
     if delay_seconds > 0:
         await interaction.response.send_message(f"⏳ Event '{name}' will be posted in {delay_seconds} seconds.", ephemeral=True)
         bot.loop.create_task(announce_event(event_data))
+    else:
+        await interaction.response.defer(ephemeral=True)
+        bot.loop.create_task(announce_event(event_data))
+        await interaction.followup.send(f"✅ Event '{name}' has been posted!", ephemeral=True)
 
-        
+
 @bot.tree.command(name="end", description="Sends the event info and clears the Participant role", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def end(interaction: discord.Interaction):
     now = datetime.now(tz=timezone.utc)
     current_events = load_events()
+
+    await interaction.response.send_message("Ending event and removing Participant role.", ephemeral=True)
 
     # Remove "Participant" role from everyone who has it
     guild = interaction.guild
