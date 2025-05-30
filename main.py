@@ -287,8 +287,9 @@ async def end(interaction: discord.Interaction):
 
     embed.add_field(
         name="",
-        value=f"Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀"
+        value=f"Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
         incline=False
+        )
 
     try:
         await interaction.channel.send(embed=embed)
