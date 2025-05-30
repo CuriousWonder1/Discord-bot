@@ -281,7 +281,7 @@ async def end(interaction: discord.Interaction):
     for e in upcoming:
         embed.add_field(
             name=e["name"],
-            value=f"Starts <t:{int(e['start_time'].timestamp())}:F>\nCreated by: <@{e['creator']['id']}>",
+            value=f"Starts <t:{int(e['start_time'].timestamp())}:F>\nCreated by: <@{e['creator']['id']}>\n",
             inline=False
         )
 
