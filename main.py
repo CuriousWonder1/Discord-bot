@@ -1,5 +1,3 @@
-Can you make the /end command remove the participant role from everyone that has the role?
-
 import discord
 from discord.ext import commands
 import os
@@ -24,7 +22,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 from discord import app_commands
 
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -33,7 +30,7 @@ def home():
     return "Bot is online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000
+    app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
     t = Thread(target=run)
@@ -68,14 +65,12 @@ def load_events():
             return data
     return []
 
-def save_events():
+def save_events(event_list):
     with open(EVENTS_FILE, "w") as f:
         json.dump([
             {**e, "start_time": e["start_time"].isoformat()}
-            for e in events
+            for e in event_list
         ], f, indent=4)
-
-events = load_events()
 
 def parse_time_delay(time_str: str) -> int:
     match = re.fullmatch(r"(\d+)([smhd])", time_str.lower())
@@ -115,11 +110,11 @@ async def announce_event(event):
     )
 
     if event.get("reward1"):
-        embed.add_field(name="🎁 1st Place Reward", value=event["reward1"], inline=False)
+        embed.add_field(name="🏱 1st Place Reward", value=event["reward1"], inline=False)
     if event.get("reward2"):
-        embed.add_field(name="🎁 2nd Place Reward", value=event["reward2"], inline=False)
+        embed.add_field(name="🏱 2nd Place Reward", value=event["reward2"], inline=False)
     if event.get("reward3"):
-        embed.add_field(name="🎁 3rd Place Reward", value=event["reward3"], inline=False)
+        embed.add_field(name="🏱 3rd Place Reward", value=event["reward3"], inline=False)
 
     embed.add_field(
         name="",
@@ -132,15 +127,20 @@ async def announce_event(event):
     message = await channel.send(embed=embed)
     await message.add_reaction("✅")
 
+    # Mark event as started
     event["started"] = True
-    save_events()
+    events = load_events()
+    for e in events:
+        if e["name"] == event["name"] and e["creator"]["id"] == event["creator"]["id"]:
+            e["started"] = True
+            break
+    save_events(events)
     print(f"Event announced: {event['name']}")
 
 async def schedule_upcoming_events():
     now = datetime.now(tz=timezone.utc)
+    events = load_events()
     for event in events:
-        if isinstance(event["start_time"], str):
-            event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
             bot.loop.create_task(announce_event(event))
 
@@ -149,10 +149,9 @@ async def schedule_upcoming_events():
 async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = ""):
     try:
         delay_seconds = parse_time_delay(delay)
-    except ValueError as ve:
+    except ValueError:
         await interaction.response.send_message(
-            "❌ Invalid time format. Use number + s/m/h/d, e.g. 30s, 5m, 48h, 2d.",
-            ephemeral=True
+            "❌ Invalid time format. Use number + s/m/h/d, e.g. 30s, 5m, 48h, 2d.", ephemeral=True
         )
         return
 
@@ -173,8 +172,9 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         "creator": creator
     }
 
+    events = load_events()
     events.append(event_data)
-    save_events()
+    save_events(events)
 
     if delay_seconds > 0:
         await interaction.response.send_message(f"⏳ Event '{name}' will be posted in {delay_seconds} seconds.", ephemeral=True)
@@ -184,7 +184,6 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         bot.loop.create_task(announce_event(event_data))
         await interaction.followup.send(f"✅ Event '{name}' has been posted!", ephemeral=True)
 
-        
 @bot.tree.command(name="end", description="Sends the event info", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def end(interaction: discord.Interaction):
@@ -192,10 +191,6 @@ async def end(interaction: discord.Interaction):
     current_events = load_events()
 
     await interaction.response.send_message("Sending event over message.", ephemeral=True)
-
-    for e in current_events:
-        if isinstance(e["start_time"], str):
-            e["start_time"] = datetime.fromisoformat(e["start_time"])
 
     upcoming = [e for e in current_events if e["start_time"] > now and not e["started"]]
 
@@ -230,21 +225,13 @@ async def end(interaction: discord.Interaction):
 
     try:
         await interaction.channel.send(embed=embed)
-        await interaction.response.defer()
     except discord.InteractionResponded:
         pass
-
-
-
 
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
 async def events_command(interaction: discord.Interaction):
     now = datetime.now(tz=timezone.utc)
     current_events = load_events()
-    for e in current_events:
-        if isinstance(e["start_time"], str):
-            e["start_time"] = datetime.fromisoformat(e["start_time"])
-
     upcoming = [e for e in current_events if e["start_time"] > now and not e["started"]]
 
     if not upcoming:
@@ -281,7 +268,6 @@ async def on_raw_reaction_remove(payload):
     if member and role and role in member.roles:
         await member.remove_roles(role)
         print(f"❎ Removed Participant role from {member.display_name}")
-
 
 keep_alive()
 print("🔁 Starting bot...")
