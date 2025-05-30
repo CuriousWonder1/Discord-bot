@@ -288,7 +288,7 @@ async def end(interaction: discord.Interaction):
 
     description_text = (
         "This channel is temporarily closed until an event is being held. It will reopen once the event starts.\n"
-        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821\n\n"
+        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821"
     )
 
     if upcoming:
