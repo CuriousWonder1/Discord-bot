@@ -75,13 +75,7 @@ def fetch_github_events():
         content = response.json()["content"]
         return json.loads(base64.b64decode(content).decode())
     return []
-        try:
-            content = response.json()["content"]
-            return json.loads(base64.b64decode(content).decode())
-        except Exception as e:
-            print("❌ Failed to decode events.json content:", e)
-            print("Response:", response.text)
-            return []
+    
     else:
         print(f"❌ Failed to fetch events.json: {response.status_code}")
         print("Response:", response.text)
