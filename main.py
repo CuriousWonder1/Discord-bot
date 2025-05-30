@@ -59,33 +59,49 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
-    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
-    path = EVENTS_FILE
-    branch = "main"
+    if not token:
+        print("❌ GITHUB_TOKEN not set!")
+        return []
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
+    url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
-        content = response.json()["content"]
-        return json.loads(base64.b64decode(content).decode())
-    return []
+        try:
+            content = response.json()["content"]
+            return json.loads(base64.b64decode(content).decode())
+        except Exception as e:
+            print("❌ Failed to decode events.json content:", e)
+            print("Response:", response.text)
+            return []
+    else:
+        print(f"❌ Failed to fetch events.json: {response.status_code}")
+        print("Response:", response.text)
+        return []
 
 def commit_github_events(data):
     token = os.getenv("GITHUB_TOKEN")
-    repo = "USERNAME/REPO"
-    path = EVENTS_FILE
-    branch = "main"
+    if not token:
+        print("❌ GITHUB_TOKEN not set!")
+        return
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
+    url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
+    # Get current file SHA for update
     get_resp = requests.get(url, headers=headers)
-    sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
+    if get_resp.status_code == 200:
+        sha = get_resp.json().get("sha")
+    else:
+        print(f"⚠️ Couldn't retrieve current file SHA: {get_resp.status_code}")
+        print("Response:", get_resp.text)
+        sha = None
 
+    # Prepare content
     content = base64.b64encode(json.dumps([
         {**e, "start_time": e["start_time"].isoformat()} for e in data
     ], indent=4).encode()).decode()
@@ -93,14 +109,17 @@ def commit_github_events(data):
     payload = {
         "message": "Update events",
         "content": content,
-        "branch": branch
+        "branch": "main"
     }
     if sha:
         payload["sha"] = sha
 
     put_resp = requests.put(url, headers=headers, json=payload)
-    if put_resp.status_code not in (200, 201):
-        print("❌ Failed to update GitHub file:", put_resp.text)
+    if put_resp.status_code in (200, 201):
+        print("✅ events.json updated on GitHub.")
+    else:
+        print("❌ Failed to update events.json on GitHub:")
+        print("Status:", put_resp.status_code)
 
 
 def load_events():
