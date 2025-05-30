@@ -310,7 +310,7 @@ async def end(interaction: discord.Interaction):
         )
 
     embed.add_field(
-        name="\u200b",  # Zero-width space for an empty name
+        name="Part",  # Zero-width space for an empty name
         value="Keep an eye out for future events in here or https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
         inline=False
     )
