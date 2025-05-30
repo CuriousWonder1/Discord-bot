@@ -32,7 +32,7 @@ def home():
     return "Bot is online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000
+    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000, but 8080 is fine if configured
 
 def keep_alive():
     t = Thread(target=run)
@@ -48,7 +48,7 @@ async def on_ready():
         print(f"✅ Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
     except Exception as e:
         print(f"❌ Sync failed: {e}")
-
+    
     await schedule_upcoming_events()
 
 
