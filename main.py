@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 from flask import Flask
 from threading import Thread
+import base64
+import requests
 
 GUILD_ID = 1372905565742960771
 EVENTS_FILE = "events.json"
@@ -21,7 +23,6 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 from discord import app_commands
-
 
 app = Flask(__name__)
 
@@ -56,22 +57,61 @@ def staff_only():
         return any(role.id in STAFF_ROLE_IDS for role in interaction.user.roles)
     return app_commands.check(predicate)
 
-def load_events():
-    if os.path.exists(EVENTS_FILE):
-        with open(EVENTS_FILE, "r") as f:
-            data = json.load(f)
-            for e in data:
-                if isinstance(e["start_time"], str):
-                    e["start_time"] = datetime.fromisoformat(e["start_time"])
-            return data
+def fetch_github_events():
+    token = os.getenv("GITHUB_TOKEN")
+    repo = "USERNAME/REPO"
+    path = EVENTS_FILE
+    branch = "main"
+
+    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        content = response.json()["content"]
+        return json.loads(base64.b64decode(content).decode())
     return []
 
+def commit_github_events(data):
+    token = os.getenv("GITHUB_TOKEN")
+    repo = "USERNAME/REPO"
+    path = EVENTS_FILE
+    branch = "main"
+
+    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    get_resp = requests.get(url, headers=headers)
+    sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
+
+    content = base64.b64encode(json.dumps([
+        {**e, "start_time": e["start_time"].isoformat()} for e in data
+    ], indent=4).encode()).decode()
+
+    payload = {
+        "message": "Update events",
+        "content": content,
+        "branch": branch
+    }
+    if sha:
+        payload["sha"] = sha
+
+    put_resp = requests.put(url, headers=headers, json=payload)
+    if put_resp.status_code not in (200, 201):
+        print("❌ Failed to update GitHub file:", put_resp.text)
+
+
+def load_events():
+    data = fetch_github_events()
+    for e in data:
+        if isinstance(e["start_time"], str):
+            e["start_time"] = datetime.fromisoformat(e["start_time"])
+    return data
+
 def save_events():
-    with open(EVENTS_FILE, "w") as f:
-        json.dump([
-            {**e, "start_time": e["start_time"].isoformat()}
-            for e in events
-        ], f, indent=4)
+    commit_github_events(events)
 
 events = load_events()
 
