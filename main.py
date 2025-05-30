@@ -42,6 +42,7 @@ def keep_alive():
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
+    
     try:
         synced = await bot.tree.sync(guild=guild)
         print(f"✅ Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
@@ -49,6 +50,7 @@ async def on_ready():
         print(f"❌ Sync failed: {e}")
     
     await schedule_upcoming_events()
+
 
 def staff_only():
     async def predicate(interaction: discord.Interaction) -> bool:
