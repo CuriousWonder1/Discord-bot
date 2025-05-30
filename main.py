@@ -309,9 +309,8 @@ async def end(interaction: discord.Interaction):
             inline=False
         )
 
-    # Final field (this was previously malformed and mis-indented)
     embed.add_field(
-        name="\u200b",  # Empty name using zero-width space
+        name="\u200b",  # Zero-width space for an empty name
         value="Keep an eye out for future events in here or https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
         inline=False
     )
