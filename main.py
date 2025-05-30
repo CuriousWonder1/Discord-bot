@@ -32,7 +32,7 @@ def home():
     return "Bot is online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000, but 8080 is fine if configured
+    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000
 
 def keep_alive():
     t = Thread(target=run)
@@ -42,15 +42,13 @@ def keep_alive():
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
-    
     try:
         synced = await bot.tree.sync(guild=guild)
         print(f"✅ Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
     except Exception as e:
         print(f"❌ Sync failed: {e}")
-    
-    await schedule_upcoming_events()
 
+    await schedule_upcoming_events()
 
 def staff_only():
     async def predicate(interaction: discord.Interaction) -> bool:
@@ -61,15 +59,22 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
+    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
+    path = EVENTS_FILE
+    branch = "main"
     if not token:
         print("❌ GITHUB_TOKEN not set!")
         return []
 
+    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
+        content = response.json()["content"]
+        return json.loads(base64.b64decode(content).decode())
+    return []
         try:
             content = response.json()["content"]
             return json.loads(base64.b64decode(content).decode())
