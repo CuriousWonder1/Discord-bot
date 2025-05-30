@@ -59,7 +59,7 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
-    repo = "USERNAME/REPO"
+    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     path = EVENTS_FILE
     branch = "main"
 
