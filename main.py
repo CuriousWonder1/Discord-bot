@@ -244,8 +244,6 @@ async def end(interaction: discord.Interaction):
     now = datetime.now(tz=timezone.utc)
     current_events = load_events()
 
-    await interaction.response.send_message("Ending event and removing Participant role.", ephemeral=True)
-
     # Remove "Participant" role from everyone who has it
     guild = interaction.guild
     participant_role = discord.utils.get(guild.roles, name="Participant")
