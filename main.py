@@ -281,17 +281,20 @@ async def end(interaction: discord.Interaction):
     for e in upcoming:
         embed.add_field(
             name=e["name"],
-            value=f"Starts <t:{int(e['start_time'].timestamp())}:F>\nCreated by: <@{e['creator']['id']}>\nKeep an eye out for future events in here or https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
+            value=f"Starts <t:{int(e['start_time'].timestamp())}:F>\nCreated by: <@{e['creator']['id']}>",
             inline=False
         )
+
+    embed.add_field(
+        name="\u200b",
+        value="/n/ Keep an eye out for future events in here or ⁠https://discord.com/channels/457619956687831050/1349087527557922988! 👀",
+        inline=False
+    )
 
     try:
         await interaction.channel.send(embed=embed)
     except discord.InteractionResponded:
         pass
-
-
-
 
 
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
