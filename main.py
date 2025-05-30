@@ -32,7 +32,7 @@ def home():
     return "Bot is online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000
+    app.run(host='0.0.0.0', port=8080)  # Replit expects port 3000, but 8080 is fine if configured
 
 def keep_alive():
     t = Thread(target=run)
@@ -51,7 +51,6 @@ async def on_ready():
     
     await schedule_upcoming_events()
 
-
 def staff_only():
     async def predicate(interaction: discord.Interaction) -> bool:
         if not isinstance(interaction.user, discord.Member):
@@ -61,22 +60,15 @@ def staff_only():
 
 def fetch_github_events():
     token = os.getenv("GITHUB_TOKEN")
-    repo = "https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
-    path = EVENTS_FILE
-    branch = "main"
     if not token:
         print("❌ GITHUB_TOKEN not set!")
         return []
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        content = response.json()["content"]
-        return json.loads(base64.b64decode(content).decode())
-    return []
         try:
             content = response.json()["content"]
             return json.loads(base64.b64decode(content).decode())
@@ -91,14 +83,10 @@ def fetch_github_events():
 
 def commit_github_events(data):
     token = os.getenv("GITHUB_TOKEN")
-    repo = "USERNAME/REPO"
-    path = EVENTS_FILE
-    branch = "main"
     if not token:
         print("❌ GITHUB_TOKEN not set!")
         return
 
-    url = f"https://github.com/CuriousWonder1/Discord-bot/blob/main/events.json"
     url = "https://api.github.com/repos/CuriousWonder1/Discord-bot/contents/events.json"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -107,7 +95,6 @@ def commit_github_events(data):
 
     # Get current file SHA for update
     get_resp = requests.get(url, headers=headers)
-    sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
     if get_resp.status_code == 200:
         sha = get_resp.json().get("sha")
     else:
@@ -115,34 +102,33 @@ def commit_github_events(data):
         print("Response:", get_resp.text)
         sha = None
 
-    # Prepare content
-    content = base64.b64encode(json.dumps([
-        {**e, "start_time": e["start_time"].isoformat()} for e in data
-    ], indent=4).encode()).decode()
+    # Prepare content (convert datetime to ISO string)
+    serializable_data = [
+        {**e, "start_time": e["start_time"].isoformat() if isinstance(e["start_time"], datetime) else e["start_time"]}
+        for e in data
+    ]
+    content = base64.b64encode(json.dumps(serializable_data, indent=4).encode()).decode()
 
     payload = {
         "message": "Update events",
         "content": content,
-        "branch": branch
         "branch": "main"
     }
     if sha:
         payload["sha"] = sha
 
     put_resp = requests.put(url, headers=headers, json=payload)
-    if put_resp.status_code not in (200, 201):
-        print("❌ Failed to update GitHub file:", put_resp.text)
     if put_resp.status_code in (200, 201):
         print("✅ events.json updated on GitHub.")
     else:
         print("❌ Failed to update events.json on GitHub:")
         print("Status:", put_resp.status_code)
-
+        print("Response:", put_resp.text)
 
 def load_events():
     data = fetch_github_events()
     for e in data:
-        if isinstance(e["start_time"], str):
+        if isinstance(e.get("start_time"), str):
             e["start_time"] = datetime.fromisoformat(e["start_time"])
     return data
 
@@ -170,6 +156,7 @@ async def announce_event(event):
         print(f"Failed to get guild {GUILD_ID} for event {event['name']}")
         return
 
+    # Find first channel where bot can send messages
     channel = None
     for ch in guild.text_channels:
         if ch.permissions_for(guild.me).send_messages:
@@ -213,7 +200,7 @@ async def announce_event(event):
 async def schedule_upcoming_events():
     now = datetime.now(tz=timezone.utc)
     for event in events:
-        if isinstance(event["start_time"], str):
+        if isinstance(event.get("start_time"), str):
             event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
             bot.loop.create_task(announce_event(event))
@@ -223,7 +210,7 @@ async def schedule_upcoming_events():
 async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = ""):
     try:
         delay_seconds = parse_time_delay(delay)
-    except ValueError as ve:
+    except ValueError:
         await interaction.response.send_message(
             "❌ Invalid time format. Use number + s/m/h/d, e.g. 30s, 5m, 48h, 2d.",
             ephemeral=True
@@ -258,7 +245,6 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         bot.loop.create_task(announce_event(event_data))
         await interaction.followup.send(f"✅ Event '{name}' has been posted!", ephemeral=True)
 
-
 @bot.tree.command(name="end", description="Sends the event info and clears the Participant role", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def end(interaction: discord.Interaction):
@@ -267,7 +253,6 @@ async def end(interaction: discord.Interaction):
 
     await interaction.response.send_message("Ending event and removing Participant role.", ephemeral=True)
 
-    # Remove "Participant" role from everyone who has it
     guild = interaction.guild
     participant_role = discord.utils.get(guild.roles, name="Participant")
     if participant_role:
@@ -281,16 +266,15 @@ async def end(interaction: discord.Interaction):
     else:
         print("Participant role not found.")
 
-    # Prepare and send the embed
     for e in current_events:
-        if isinstance(e["start_time"], str):
+        if isinstance(e.get("start_time"), str):
             e["start_time"] = datetime.fromisoformat(e["start_time"])
 
-    upcoming = [e for e in current_events if e["start_time"] > now and not e["started"]]
+    upcoming = [e for e in current_events if e["start_time"] > now and not e.get("started", False)]
 
     description_text = (
         "This channel is temporarily closed until an event is being held. It will reopen once the event starts.\n"
-        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821"
+        "If you have any questions about upcoming events, feel free to ping the host, DM them, or ask in ⁠https://discord.com/channels/457619956687831050/666452996967628821\n"
     )
 
     if upcoming:
@@ -316,56 +300,71 @@ async def end(interaction: discord.Interaction):
     except discord.InteractionResponded:
         pass
 
-
-
-
-
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
 async def events_command(interaction: discord.Interaction):
     now = datetime.now(tz=timezone.utc)
     current_events = load_events()
-    for e in current_events:
-        if isinstance(e["start_time"], str):
-            e["start_time"] = datetime.fromisoformat(e["start_time"])
-
-    upcoming = [e for e in current_events if e["start_time"] > now and not e["started"]]
+    upcoming = [e for e in current_events if e["start_time"] > now and not e.get("started", False)]
 
     if not upcoming:
-        await interaction.response.send_message("There are no upcoming events planned.")
+        await interaction.response.send_message("🚫 There are currently no upcoming events.", ephemeral=True)
         return
 
-    embed = discord.Embed(title="📅 Upcoming Events", color=discord.Color.green())
+    embed = discord.Embed(
+        title="🎉 Upcoming Events",
+        description="Here are the scheduled events:",
+        color=discord.Color.green()
+    )
+
     for e in upcoming:
         embed.add_field(
             name=e["name"],
             value=f"Starts <t:{int(e['start_time'].timestamp())}:F>\nCreated by: <@{e['creator']['id']}>",
             inline=False
         )
+
     await interaction.response.send_message(embed=embed)
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.emoji.name != "✅" or payload.user_id == bot.user.id:
+    if payload.user_id == bot.user.id:
         return
-    guild = bot.get_guild(payload.guild_id)
-    member = guild.get_member(payload.user_id) if guild else None
-    role = discord.utils.get(guild.roles, name="Participant") if guild else None
-    if member and role and role not in member.roles:
-        await member.add_roles(role)
-        print(f"✅ Assigned Participant role to {member.display_name}")
 
-@bot.event
-async def on_raw_reaction_remove(payload):
-    if payload.emoji.name != "✅":
+    guild = bot.get_guild(payload.guild_id)
+    if guild is None:
         return
-    guild = bot.get_guild(payload.guild_id)
-    member = guild.get_member(payload.user_id) if guild else None
-    role = discord.utils.get(guild.roles, name="Participant") if guild else None
-    if member and role and role in member.roles:
-        await member.remove_roles(role)
-        print(f"❎ Removed Participant role from {member.display_name}")
 
+    member = guild.get_member(payload.user_id)
+    if member is None:
+        return
+
+    channel = guild.get_channel(payload.channel_id)
+    if channel is None:
+        return
+
+    try:
+        message = await channel.fetch_message(payload.message_id)
+    except Exception:
+        return
+
+    # Check if reaction is ✅ and message is one of our event announcements
+    if str(payload.emoji) != "✅":
+        return
+
+    # Identify the event this message belongs to
+    # Check if message embed matches event info
+    for event in events:
+        if event.get("started") and message.embeds:
+            embed = message.embeds[0]
+            if embed.title and embed.title.lower() == event["name"].lower():
+                participant_role = discord.utils.get(guild.roles, name="Participant")
+                if participant_role and participant_role not in member.roles:
+                    try:
+                        await member.add_roles(participant_role, reason="Event participation reaction")
+                        print(f"Added Participant role to {member.display_name}")
+                    except Exception as e:
+                        print(f"Failed to add role to {member.display_name}: {e}")
+                break
 
 keep_alive()
-print("🔁 Starting bot...")
 bot.run(os.getenv("DISCORD_TOKEN"))
