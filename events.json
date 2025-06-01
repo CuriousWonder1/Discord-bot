@@ -102,5 +102,18 @@
             "id": 966933822522396722,
             "name": "curiouswonders"
         }
+    },
+    {
+        "name": "ant life hide and seek",
+        "info": "hide and seek event, 3 seekers rest are hiders, if caught you join the hiders",
+        "reward1": "300 protein",
+        "reward2": "200 protein",
+        "reward3": "100 protein",
+        "start_time": "2025-06-01T21:55:44.318576+00:00",
+        "started": false,
+        "creator": {
+            "id": 966933822522396722,
+            "name": "curiouswonders"
+        }
     }
 ]
