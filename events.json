@@ -89,5 +89,18 @@
             "id": 966933822522396722,
             "name": "curiouswonders"
         }
+    },
+    {
+        "name": "test",
+        "info": "testing",
+        "reward1": "",
+        "reward2": "",
+        "reward3": "",
+        "start_time": "2025-06-01T21:53:36.540875+00:00",
+        "started": false,
+        "creator": {
+            "id": 966933822522396722,
+            "name": "curiouswonders"
+        }
     }
 ]
