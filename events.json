@@ -109,8 +109,8 @@
         "reward1": "300 protein",
         "reward2": "200 protein",
         "reward3": "100 protein",
-        "start_time": "2025-06-01T21:55:44.318576+00:00",
-        "started": false,
+        "start_time": "2025-06-01T21:55:44.318662+00:00",
+        "started": true,
         "creator": {
             "id": 966933822522396722,
             "name": "curiouswonders"
