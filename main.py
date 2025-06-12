@@ -346,3 +346,6 @@ async def on_raw_reaction_remove(payload):
 keep_alive()
 print("🔁 Starting bot...")
 bot.run(os.getenv("DISCORD_TOKEN"))
+
+port = int(os.environ.get("PORT", 8080))  # Use Render's assigned port or default to 8080
+app.run(host='0.0.0.0', port=port)
