@@ -10,9 +10,9 @@ from threading import Thread
 import base64
 import requests
 
-GUILD_ID = 1372905565742960771
+GUILD_ID = 457619956687831050
 EVENTS_FILE = "events.json"
-STAFF_ROLE_IDS = {1377216937989505074, 1377217110551429140}
+STAFF_ROLE_IDS = {578725917258416129, 879592909203197952}
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -152,7 +152,7 @@ async def announce_event(event):
         print(f"No suitable channel found for event {event['name']}")
         return
 
-    role_mention = "<@&1377228208302329936>"
+    role_mention = "<@&828406807285202974>"
     await channel.send(role_mention, allowed_mentions=discord.AllowedMentions(roles=True))
 
     embed = discord.Embed(
