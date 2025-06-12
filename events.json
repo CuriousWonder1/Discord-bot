@@ -167,5 +167,18 @@
             "id": 966933822522396722,
             "name": "curiouswonders"
         }
+    },
+    {
+        "name": "213",
+        "info": "312",
+        "reward1": "",
+        "reward2": "",
+        "reward3": "",
+        "start_time": "2025-06-12T07:19:01.695289+00:00",
+        "started": false,
+        "creator": {
+            "id": 966933822522396722,
+            "name": "curiouswonders"
+        }
     }
 ]
