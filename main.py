@@ -10,9 +10,9 @@ from threading import Thread
 import base64
 import requests
 
-GUILD_ID = 457619956687831050
+GUILD_ID = 1372905565742960771
 EVENTS_FILE = "events.json"
-STAFF_ROLE_IDS = {578725917258416129, 879592909203197952}
+STAFF_ROLE_IDS = {1377216937989505074, 1377217110551429140}
 
 intents = discord.Intents.default()
 intents.message_content = True
