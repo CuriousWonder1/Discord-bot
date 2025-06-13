@@ -152,7 +152,7 @@ async def announce_event(event):
         print(f"No suitable channel found for event {event['name']}")
         return
 
-    role_mention = "<@&828406807285202974>"
+    role_mention = "<@&1382621918024433697>"
     await channel.send(role_mention, allowed_mentions=discord.AllowedMentions(roles=True))
 
     embed = discord.Embed(
