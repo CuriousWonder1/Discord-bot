@@ -168,7 +168,7 @@ async def announce_event(event):
     if event.get("reward3"):
         embed.add_field(name="\U0001F381 3rd Place Reward", value=event["reward3"], inline=False)
     if event.get("ParticipatePrize"):
-        embed.add_field(name="\U0001F381 Participation Reward", value=event["ParticipatePrize"], inline=False)
+        embed.add_field(name="\U0001F381 Participation Reward", value=event["participation_reward"], inline=False)
 
     embed.add_field(
         name="",
@@ -196,7 +196,7 @@ async def schedule_upcoming_events():
 
 @bot.tree.command(name="createevent", description="Create an event", guild=discord.Object(id=GUILD_ID))
 @staff_only()
-async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = "", ParticipatePrize: str = ""):
+async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = "", participation_reward: str = ""):
     try:
         delay_seconds = parse_time_delay(delay)
     except ValueError as ve:
@@ -218,7 +218,7 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         "reward1": reward1,
         "reward2": reward2,
         "reward3": reward3,
-        "ParticipatePrize": ParticipatePrize,
+        "participation_reward": participation_reward,
         "start_time": start_time,
         "started": False,
         "creator": creator
