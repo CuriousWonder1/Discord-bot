@@ -258,5 +258,19 @@
             "id": 966933822522396722,
             "name": "curiouswonders"
         }
+    },
+    {
+        "name": "test",
+        "info": "test",
+        "reward1": "5",
+        "reward2": "10",
+        "reward3": "15",
+        "participation_reward": "5",
+        "start_time": "2025-06-15T02:11:40.217506+00:00",
+        "started": false,
+        "creator": {
+            "id": 1277655936382668933,
+            "name": "crewbar"
+        }
     }
 ]
