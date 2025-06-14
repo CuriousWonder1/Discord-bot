@@ -272,5 +272,19 @@
             "id": 1277655936382668933,
             "name": "crewbar"
         }
+    },
+    {
+        "name": "testing agaim",
+        "info": "super cooil event",
+        "reward1": "4",
+        "reward2": "2",
+        "reward3": "3",
+        "participation_reward": "73",
+        "start_time": "2025-06-14T22:10:55.692038+00:00",
+        "started": false,
+        "creator": {
+            "id": 1277655936382668933,
+            "name": "crewbar"
+        }
     }
 ]
