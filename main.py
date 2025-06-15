@@ -136,7 +136,7 @@ def parse_time_delay(time_str: str) -> int:
     value = int(value)
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
 
-async def announce_event(event, target_channel=None):
+async def announce_event(event):
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
     if delay > 0:
@@ -148,10 +148,11 @@ async def announce_event(event, target_channel=None):
         return
 
     # Use provided channel if available, otherwise default to first available
-    channel = target_channel or next(
-        (ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages),
-        None
-    )
+    channel = guild.get_channel(event.get("channel_id"))
+    if channel is None:
+        print(f"Fallback: no stored channel for event {event['name']}, using first available.")
+        channel = next((ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages), None)
+
     if channel is None:
         print(f"No suitable channel found for event {event['name']}")
         return
@@ -171,7 +172,7 @@ async def announce_event(event, target_channel=None):
         embed.add_field(name="\U0001F381 2nd Place Reward", value=event["reward2"], inline=False)
     if event.get("reward3"):
         embed.add_field(name="\U0001F381 3rd Place Reward", value=event["reward3"], inline=False)
-    if event.get("ParticipatePrize"):
+    if event.get("participation_reward"):
         embed.add_field(name="\U0001F381 Participation Reward", value=event["participation_reward"], inline=False)
 
     embed.add_field(
@@ -203,7 +204,7 @@ async def schedule_upcoming_events():
 async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = "", participation_reward: str = ""):
     try:
         delay_seconds = parse_time_delay(delay)
-    except ValueError as ve:
+    except ValueError:
         await interaction.response.send_message(
             "❌ Invalid time format. Use number + s/m/h/d, e.g. 30s, 5m, 48h, 2d.",
             ephemeral=True
@@ -225,7 +226,8 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         "participation_reward": participation_reward,
         "start_time": start_time,
         "started": False,
-        "creator": creator
+        "creator": creator,
+        "channel_id": interaction.channel_id
     }
 
     events.append(event_data)
