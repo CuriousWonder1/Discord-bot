@@ -211,6 +211,8 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
         )
         return
 
+    await interaction.response.defer(ephemeral=True)  # ✅ Always defer quickly
+
     start_time = datetime.now(tz=timezone.utc) + timedelta(seconds=delay_seconds)
     creator = {
         "id": interaction.user.id,
@@ -233,13 +235,12 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
     events.append(event_data)
     save_events()
 
+    bot.loop.create_task(announce_event(event_data))
+
     if delay_seconds > 0:
-        await interaction.response.send_message(f"⏳ Event '{name}' will be posted in {delay_seconds} seconds.", ephemeral=True)
-        bot.loop.create_task(announce_event(event_data))
+        await interaction.followup.send(f"⏳ Event '{name}' will be posted in {delay_seconds} seconds.")
     else:
-        await interaction.response.defer(ephemeral=True)
-        bot.loop.create_task(announce_event(event_data))
-        await interaction.followup.send(f"✅ Event '{name}' has been posted!", ephemeral=True)
+        await interaction.followup.send(f"✅ Event '{name}' has been posted!")
 
 
 @bot.tree.command(name="end", description="Sends the event info and clears the Participant role", guild=discord.Object(id=GUILD_ID))
