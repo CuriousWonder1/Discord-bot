@@ -136,7 +136,7 @@ def parse_time_delay(time_str: str) -> int:
     value = int(value)
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
 
-async def announce_event(event):
+async def announce_event(event, target_channel=None):
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
     if delay > 0:
@@ -147,7 +147,11 @@ async def announce_event(event):
         print(f"Failed to get guild {GUILD_ID} for event {event['name']}")
         return
 
-    channel = next((ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages), None)
+    # Use provided channel if available, otherwise default to first available
+    channel = target_channel or next(
+        (ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages),
+        None
+    )
     if channel is None:
         print(f"No suitable channel found for event {event['name']}")
         return
