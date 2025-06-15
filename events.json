@@ -267,7 +267,7 @@
         "reward3": "15",
         "participation_reward": "5",
         "start_time": "2025-06-15T02:11:40.217506+00:00",
-        "started": false,
+        "started": true,
         "creator": {
             "id": 1277655936382668933,
             "name": "crewbar"
