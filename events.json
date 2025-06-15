@@ -364,8 +364,8 @@
         "reward2": "",
         "reward3": "",
         "participation_reward": "",
-        "start_time": "2025-06-15T01:55:27.727574+00:00",
-        "started": false,
+        "start_time": "2025-06-15T01:55:27.730791+00:00",
+        "started": true,
         "creator": {
             "id": 966933822522396722,
             "name": "curiouswonders"
