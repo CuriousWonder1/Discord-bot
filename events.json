@@ -458,5 +458,20 @@
             "name": "curiouswonders"
         },
         "channel_id": 579437629859430410
+    },
+    {
+        "name": "event test",
+        "info": "event information things",
+        "reward1": "5",
+        "reward2": "10",
+        "reward3": "15",
+        "participation_reward": "5",
+        "start_time": "2025-06-15T02:19:43.629645+00:00",
+        "started": false,
+        "creator": {
+            "id": 1277655936382668933,
+            "name": "crewbar"
+        },
+        "channel_id": 579437629859430410
     }
 ]
