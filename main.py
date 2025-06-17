@@ -9,6 +9,7 @@ from flask import Flask
 from threading import Thread
 import base64
 import requests
+from discord import SelectOption
 
 GUILD_ID = 457619956687831050
 EVENTS_FILE = "events.json"
@@ -329,6 +330,69 @@ async def events_command(interaction: discord.Interaction):
             inline=False
         )
     await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="editevent", description="Edit an upcoming event", guild=discord.Object(id=GUILD_ID))
+@staff_only()
+async def editevent(interaction: discord.Interaction):
+    now = datetime.now(tz=timezone.utc)
+    user_id = interaction.user.id
+    user_events = [
+        e for e in load_events()
+        if not e.get("started") and e["start_time"] > now and e["creator"]["id"] == user_id
+    ]
+
+    if not user_events:
+        await interaction.response.send_message("❌ You have no upcoming events to edit.", ephemeral=True)
+        return
+
+    class EventSelector(discord.ui.Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(label=e["name"], value=str(i))
+                for i, e in enumerate(user_events)
+            ]
+            super().__init__(placeholder="Select an event to edit", min_values=1, max_values=1, options=options)
+
+        async def callback(self, select_interaction):
+            selected_index = int(self.values[0])
+            event = user_events[selected_index]
+
+            class EditModal(discord.ui.Modal, title="Edit Event"):
+                new_name = discord.ui.TextInput(label="Event Name", default=event["name"])
+                new_info = discord.ui.TextInput(label="Description", default=event["info"], style=discord.TextStyle.paragraph)
+                new_delay = discord.ui.TextInput(label="Time until event (e.g. 5m, 1h)", placeholder="Leave blank to keep the same time", required=False)
+                new_reward1 = discord.ui.TextInput(label="1st Place Reward", default=event.get("reward1", ""), required=False)
+                new_reward2 = discord.ui.TextInput(label="2nd Place Reward", default=event.get("reward2", ""), required=False)
+                new_reward3 = discord.ui.TextInput(label="3rd Place Reward", default=event.get("reward3", ""), required=False)
+                new_participation = discord.ui.TextInput(label="Participation Reward", default=event.get("participation_reward", ""), required=False)
+
+                async def on_submit(self, modal_interaction: discord.Interaction):
+                    event["name"] = self.new_name.value
+                    event["info"] = self.new_info.value
+                    if self.new_delay.value:
+                        try:
+                            delay = parse_time_delay(self.new_delay.value)
+                            event["start_time"] = datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
+                        except ValueError:
+                            await modal_interaction.response.send_message("❌ Invalid time format.", ephemeral=True)
+                            return
+                    event["reward1"] = self.new_reward1.value
+                    event["reward2"] = self.new_reward2.value
+                    event["reward3"] = self.new_reward3.value
+                    event["participation_reward"] = self.new_participation.value
+
+                    save_events()
+                    await modal_interaction.response.send_message(f"✅ Event '{event['name']}' has been updated!", ephemeral=True)
+
+            await select_interaction.response.send_modal(EditModal())
+
+    class EventSelectView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=60)
+            self.add_item(EventSelector())
+
+    await interaction.response.send_message("Select an event to edit:", view=EventSelectView(), ephemeral=True)
 
 @bot.event
 async def on_raw_reaction_add(payload):
