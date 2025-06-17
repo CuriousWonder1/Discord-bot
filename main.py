@@ -335,22 +335,33 @@ async def events_command(interaction: discord.Interaction):
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def editevent(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)  # ADD THIS EARLY
+    await interaction.response.defer(ephemeral=True)
 
     user_id = interaction.user.id
     now = datetime.now(tz=timezone.utc)
 
+    def parse_start_time(event):
+        start = event.get("start_time")
+        if isinstance(start, str):
+            try:
+                return datetime.fromisoformat(start)
+            except ValueError:
+                return None
+        elif isinstance(start, datetime):
+            return start
+        return None
+
     user_events = [
         e for e in load_events()
-        if not e.get("started", False) and e["creator"]["id"] == user_id and datetime.fromisoformat(e["start_time"]) > now
+        if not e.get("started", False)
+        and e["creator"]["id"] == user_id
+        and (start_time := parse_start_time(e)) is not None
+        and start_time > now
     ]
 
     if not user_events:
         await interaction.followup.send("You have no upcoming events to edit.")
         return
-
-    view = EventSelectView(user_events)
-    await interaction.followup.send("Select an event to edit:", view=view)
 
     class EventSelector(discord.ui.Select):
         def __init__(self):
@@ -379,7 +390,7 @@ async def editevent(interaction: discord.Interaction):
                     if self.new_delay.value:
                         try:
                             delay = parse_time_delay(self.new_delay.value)
-                            event["start_time"] = datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
+                            event["start_time"] = (datetime.now(tz=timezone.utc) + timedelta(seconds=delay)).isoformat()
                         except ValueError:
                             await modal_interaction.response.send_message("❌ Invalid time format.", ephemeral=True)
                             return
@@ -398,7 +409,7 @@ async def editevent(interaction: discord.Interaction):
             super().__init__(timeout=60)
             self.add_item(EventSelector())
 
-    await interaction.response.send_message("Select an event to edit:", view=EventSelectView(), ephemeral=True)
+    await interaction.followup.send("Select an event to edit:", view=EventSelectView(), ephemeral=True)
 
 @bot.event
 async def on_raw_reaction_add(payload):
