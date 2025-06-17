@@ -277,6 +277,7 @@ async def editevent(interaction: discord.Interaction):
     await interaction.followup.send("Select the event to edit:", view=EditView(), ephemeral=True)
 
 @bot.tree.command(name="deleteevent", description="Mark one of your upcoming events as deleted", guild=discord.Object(id=GUILD_ID))
+@staff_only()
 async def deleteevent(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
 
