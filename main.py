@@ -98,7 +98,7 @@ def commit_github_events(data):
         sha = None
 
     content = base64.b64encode(json.dumps([
-        {**e, "start_time": e["start_time"].isoformat()} for e in data
+        {**e, "start_time": e["start_time"].isoformat() if isinstance(e["start_time"], datetime) else e["start_time"]} for e in data
     ], indent=4).encode()).decode()
 
     payload = {
@@ -199,7 +199,154 @@ async def schedule_upcoming_events():
         if not event.get("started", False) and event["start_time"] > now:
             bot.loop.create_task(announce_event(event))
 
+@bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
+@staff_only()
+async def editevent(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
 
+    now = datetime.now(tz=timezone.utc)
+    user_id = interaction.user.id
+    current_events = load_events()
+
+    def parse_start(event):
+        if isinstance(event.get("start_time"), str):
+            try:
+                return datetime.fromisoformat(event["start_time"])
+            except ValueError:
+                return None
+        return event.get("start_time")
+
+    # Get user's editable upcoming events
+    editable = [
+        (i, e) for i, e in enumerate(current_events)
+        if not e.get("started") and e["creator"]["id"] == user_id and (start := parse_start(e)) and start > now
+    ]
+
+    if not editable:
+        await interaction.followup.send("You have no upcoming events to edit.", ephemeral=True)
+        return
+
+    class EditSelector(discord.ui.Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(label=e["name"], value=str(i))
+                for i, (i_orig, e) in enumerate(editable)
+            ]
+            super().__init__(placeholder="Choose an event to edit", options=options)
+
+        async def callback(self, select_interaction):
+            selected = int(self.values[0])
+            original_index, event = editable[selected]
+
+            class EditModal(discord.ui.Modal, title="Edit Event"):
+                name = discord.ui.TextInput(label="Event Name", default=event["name"])
+                info = discord.ui.TextInput(label="Description", default=event["info"], style=discord.TextStyle.paragraph)
+                delay = discord.ui.TextInput(label="Time until event (e.g. 5m, 1h)", required=False, placeholder="Leave blank to keep")
+                participation = discord.ui.TextInput(label="Participation Reward", default=event.get("participation_reward", ""), required=False)
+
+
+                async def on_submit(self, modal_interaction: discord.Interaction):
+                    event["name"] = self.name.value
+                    event["info"] = self.info.value
+                    event["participation_reward"] = self.participation.value
+
+                    if self.delay.value.strip():
+                        try:
+                            seconds = parse_time_delay(self.delay.value.strip())
+                            new_start = datetime.now(tz=timezone.utc) + timedelta(seconds=seconds)
+                            event["start_time"] = new_start
+                        except ValueError:
+                            await modal_interaction.response.send_message("❌ Invalid delay format!", ephemeral=True)
+                            return
+
+                    # Update the event in the main list and save
+                    current_events[original_index] = event
+                    global events
+                    events = current_events
+                    save_events()
+
+                    await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
+
+            await select_interaction.response.send_modal(EditModal())
+
+    class EditView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=60)
+            self.add_item(EditSelector())
+
+    await interaction.followup.send("Select the event to edit:", view=EditView(), ephemeral=True)
+
+@bot.tree.command(name="deleteevent", description="Mark one of your upcoming events as deleted", guild=discord.Object(id=GUILD_ID))
+async def deleteevent(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+
+    user_id = interaction.user.id
+    now = datetime.now(timezone.utc)
+
+    global events
+    events = load_events()
+
+    def parse_start(event):
+        if isinstance(event.get("start_time"), str):
+            try:
+                return datetime.fromisoformat(event["start_time"])
+            except ValueError:
+                return None
+        return event.get("start_time")
+
+    # Filter upcoming user events
+    deletable = [
+        (i, e) for i, e in enumerate(events)
+        if not e.get("started") and e["creator"]["id"] == user_id and (start := parse_start(e)) and start > now
+    ]
+
+    if not deletable:
+        await interaction.followup.send("You have no upcoming events to delete.", ephemeral=True)
+        return
+
+    class DeleteSelector(discord.ui.Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(label=e["name"], value=str(i))
+                for i, (i_orig, e) in enumerate(deletable)
+            ]
+            super().__init__(placeholder="Choose an event to delete", options=options)
+
+        async def callback(self, select_interaction):
+            selected = int(self.values[0])
+            original_index, event = deletable[selected]
+
+            class ConfirmDeleteModal(discord.ui.Modal, title="Confirm Delete Event"):
+                confirm = discord.ui.TextInput(
+                    label="Type DELETE to confirm",
+                    placeholder="DELETE",
+                    required=True
+                )
+
+                async def on_submit(self, modal_interaction: discord.Interaction):
+                    if self.confirm.value.strip().upper() != "DELETE":
+                        await modal_interaction.response.send_message("❌ Deletion cancelled.", ephemeral=True)
+                        return
+
+                    # Mark event as deleted
+                    event["start_time"] = "2025-06-15T00:24:17.613225+00:00"
+
+                    # Update and save
+                    events[original_index] = event
+                    save_events()
+
+                    await modal_interaction.response.send_message(f"🗑️ Event **{event['name']}** has been marked as deleted.", ephemeral=True)
+
+            await select_interaction.response.send_modal(ConfirmDeleteModal())
+
+    class DeleteView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=60)
+            self.add_item(DeleteSelector())
+
+    await interaction.followup.send("Select the event to delete:", view=DeleteView(), ephemeral=True)
+
+    
 @bot.tree.command(name="createevent", description="Create an event", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = "", participation_reward: str = ""):
@@ -332,7 +479,6 @@ async def events_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def editevent(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -351,65 +497,7 @@ async def editevent(interaction: discord.Interaction):
             return start
         return None
 
-    user_events = [
-        e for e in load_events()
-        if not e.get("started", False)
-        and e["creator"]["id"] == user_id
-        and (start_time := parse_start_time(e)) is not None
-        and start_time > now
-    ]
 
-    if not user_events:
-        await interaction.followup.send("You have no upcoming events to edit.")
-        return
-
-    class EventSelector(discord.ui.Select):
-        def __init__(self):
-            options = [
-                discord.SelectOption(label=e["name"], value=str(i))
-                for i, e in enumerate(user_events)
-            ]
-            super().__init__(placeholder="Select an event to edit", min_values=1, max_values=1, options=options)
-
-        async def callback(self, select_interaction):
-            selected_index = int(self.values[0])
-            event = user_events[selected_index]
-
-            class EditModal(discord.ui.Modal, title="Edit Event"):
-                new_name = discord.ui.TextInput(label="Event Name", default=event["name"])
-                new_info = discord.ui.TextInput(label="Description", default=event["info"], style=discord.TextStyle.paragraph)
-                new_delay = discord.ui.TextInput(label="Time until event (e.g. 5m, 1h)", placeholder="Leave blank to keep the same time", required=False)
-                new_reward1 = discord.ui.TextInput(label="1st Place Reward", default=event.get("reward1", ""), required=False)
-                new_reward2 = discord.ui.TextInput(label="2nd Place Reward", default=event.get("reward2", ""), required=False)
-                new_reward3 = discord.ui.TextInput(label="3rd Place Reward", default=event.get("reward3", ""), required=False)
-                new_participation = discord.ui.TextInput(label="Participation Reward", default=event.get("participation_reward", ""), required=False)
-
-                async def on_submit(self, modal_interaction: discord.Interaction):
-                    event["name"] = self.new_name.value
-                    event["info"] = self.new_info.value
-                    if self.new_delay.value:
-                        try:
-                            delay = parse_time_delay(self.new_delay.value)
-                            event["start_time"] = (datetime.now(tz=timezone.utc) + timedelta(seconds=delay)).isoformat()
-                        except ValueError:
-                            await modal_interaction.response.send_message("❌ Invalid time format.", ephemeral=True)
-                            return
-                    event["reward1"] = self.new_reward1.value
-                    event["reward2"] = self.new_reward2.value
-                    event["reward3"] = self.new_reward3.value
-                    event["participation_reward"] = self.new_participation.value
-
-                    save_events()
-                    await modal_interaction.response.send_message(f"✅ Event '{event['name']}' has been updated!", ephemeral=True)
-
-            await select_interaction.response.send_modal(EditModal())
-
-    class EventSelectView(discord.ui.View):
-        def __init__(self):
-            super().__init__(timeout=60)
-            self.add_item(EventSelector())
-
-    await interaction.followup.send("Select an event to edit:", view=EventSelectView(), ephemeral=True)
 
 @bot.event
 async def on_raw_reaction_add(payload):
