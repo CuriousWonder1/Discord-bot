@@ -332,19 +332,25 @@ async def events_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@bot.tree.command(name="editevent", description="Edit an upcoming event", guild=discord.Object(id=GUILD_ID))
+@bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def editevent(interaction: discord.Interaction):
-    now = datetime.now(tz=timezone.utc)
+    await interaction.response.defer(ephemeral=True)  # ADD THIS EARLY
+
     user_id = interaction.user.id
+    now = datetime.now(tz=timezone.utc)
+
     user_events = [
         e for e in load_events()
-        if not e.get("started") and e["start_time"] > now and e["creator"]["id"] == user_id
+        if not e.get("started", False) and e["creator"]["id"] == user_id and datetime.fromisoformat(e["start_time"]) > now
     ]
 
     if not user_events:
-        await interaction.response.send_message("❌ You have no upcoming events to edit.", ephemeral=True)
+        await interaction.followup.send("You have no upcoming events to edit.")
         return
+
+    view = EventSelectView(user_events)
+    await interaction.followup.send("Select an event to edit:", view=view)
 
     class EventSelector(discord.ui.Select):
         def __init__(self):
