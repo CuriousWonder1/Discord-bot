@@ -27,8 +27,7 @@ from discord import app_commands
 
 app = Flask(__name__)
 
-
-scheduled_tasks = {}  # key: event index in the `events` list, value: asyncio.Task
+scheduled_tasks = {}  # Stores asyncio tasks for events
 
 @app.route('/')
 def home():
@@ -51,6 +50,8 @@ async def on_ready():
         print(f"\u2705 Synced {len(synced)} slash command(s) to guild {GUILD_ID}")
     except Exception as e:
         print(f"\u274C Sync failed: {e}")
+
+    bot.loop.create_task(periodic_event_sync())
 
     await schedule_upcoming_events()
 
@@ -78,16 +79,6 @@ def fetch_github_events():
         print(f"\u274C Failed to fetch events.json: {response.status_code}")
         print("Response:", response.text)
         return []
-def schedule_announcement(index, event):
-    # Cancel previous task if exists
-    old_task = scheduled_tasks.get(index)
-    if old_task and not old_task.done():
-        old_task.cancel()
-        print(f"Cancelled previous announcement task for event '{event['name']}' at index {index}")
-
-    # Schedule new announcement task
-    task = bot.loop.create_task(announce_event(event))
-    scheduled_tasks[index] = task
 
 def commit_github_events(data):
     token = os.getenv("GITHUB_TOKEN")
@@ -149,12 +140,16 @@ def parse_time_delay(time_str: str) -> int:
     value, unit = match.groups()
     value = int(value)
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
-
+    
 async def announce_event(event):
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
-    if delay > 0:
-        await asyncio.sleep(delay)
+    try:
+        if delay > 0:
+            await asyncio.sleep(delay)
+    except asyncio.CancelledError:
+        print(f"🛑 Announcement task for '{event['name']}' was cancelled.")
+        return  # Stop further execution if cancelled
 
     guild = bot.get_guild(GUILD_ID)
     if guild is None:
@@ -205,13 +200,46 @@ async def announce_event(event):
     print(f"Event announced: {event['name']}")
 
 async def schedule_upcoming_events():
-    now = datetime.now(tz=timezone.utc)
+    global scheduled_tasks
     global events
+    now = datetime.now(tz=timezone.utc)
+
     for idx, event in enumerate(events):
         if isinstance(event["start_time"], str):
             event["start_time"] = datetime.fromisoformat(event["start_time"])
+
         if not event.get("started", False) and event["start_time"] > now:
-            schedule_announcement(idx, event)
+            # Cancel any previously scheduled task for this index
+            existing_task = scheduled_tasks.get(idx)
+            if existing_task and not existing_task.done():
+                existing_task.cancel()
+                print(f"❌ Cancelled previous task for event {event['name']}")
+
+            # Schedule new task
+            task = asyncio.create_task(announce_event(event))
+            scheduled_tasks[idx] = task
+            print(f"✅ Scheduled announcement for {event['name']}")
+
+async def periodic_event_sync():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        print("🔄 Checking GitHub for event updates...")
+        new_events = load_events()
+
+        # Convert start_time strings to datetime
+        for e in new_events:
+            if isinstance(e["start_time"], str):
+                e["start_time"] = datetime.fromisoformat(e["start_time"])
+
+        # Overwrite in-memory event list
+        global events
+        events = new_events
+
+        # Reschedule announcements
+        await schedule_upcoming_events()
+
+        await asyncio.sleep(30)
+
 
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
@@ -274,17 +302,12 @@ async def editevent(interaction: discord.Interaction):
                             return
 
                     # Update the event in the main list and save
-# Update the event in the main list and save
-                        current_events[original_index] = event
-                        global events
-                        events = current_events
-                        save_events()
-
-# Reschedule announcement for updated event
-                        schedule_announcement(original_index, event)
-
-                        await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
-
+                    current_events[original_index] = event
+                    global events
+                    events = current_events
+                    save_events()
+                    await schedule_upcoming_events()
+                    await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
 
             await select_interaction.response.send_modal(EditModal())
 
@@ -302,9 +325,10 @@ async def deleteevent(interaction: discord.Interaction):
 
     user_id = interaction.user.id
     now = datetime.now(timezone.utc)
+    current_events = load_events()
 
     global events
-    events = load_events()
+    events = current_events
 
     def parse_start(event):
         if isinstance(event.get("start_time"), str):
@@ -314,7 +338,6 @@ async def deleteevent(interaction: discord.Interaction):
                 return None
         return event.get("start_time")
 
-    # Filter upcoming user events
     deletable = [
         (i, e) for i, e in enumerate(events)
         if not e.get("started") and e["creator"]["id"] == user_id and (start := parse_start(e)) and start > now
@@ -348,14 +371,28 @@ async def deleteevent(interaction: discord.Interaction):
                         await modal_interaction.response.send_message("❌ Deletion cancelled.", ephemeral=True)
                         return
 
-                    # Mark event as deleted
-                    event["start_time"] = "2025-06-15T00:24:17.613225+00:00"
+                    # Mark as deleted (past timestamp)
+                    event["start_time"] = "2000-01-01T00:00:00+00:00"
+                    current_events[original_index] = event
 
-                    # Update and save
-                    events[original_index] = event
+                    global events
+                    events = current_events
                     save_events()
 
-                    await modal_interaction.response.send_message(f"🗑️ Event **{event['name']}** has been marked as deleted.", ephemeral=True)
+                    # Cancel existing scheduled task
+                    task = scheduled_tasks.get(original_index)
+                    if task and not task.done():
+                        task.cancel()
+                        print(f"🛑 Cancelled announcement for deleted event '{event['name']}'")
+
+                    # Reload and reschedule
+                    events = load_events()
+                    await schedule_upcoming_events()
+
+                    await modal_interaction.response.send_message(
+                        f"🗑️ Event **{event['name']}** has been marked as deleted.",
+                        ephemeral=True
+                    )
 
             await select_interaction.response.send_modal(ConfirmDeleteModal())
 
@@ -365,6 +402,7 @@ async def deleteevent(interaction: discord.Interaction):
             self.add_item(DeleteSelector())
 
     await interaction.followup.send("Select the event to delete:", view=DeleteView(), ephemeral=True)
+
 
 
 @bot.tree.command(name="createevent", description="Create an event", guild=discord.Object(id=GUILD_ID))
@@ -403,7 +441,13 @@ async def createevent(interaction: discord.Interaction, name: str, info: str, de
     events.append(event_data)
     save_events()
 
-    bot.loop.create_task(announce_event(event_data))
+    # Schedule with tracking
+    idx = len(events) - 1  # Index of the new event
+    existing_task = scheduled_tasks.get(idx)
+    if existing_task and not existing_task.done():
+        existing_task.cancel()
+    scheduled_tasks[idx] = asyncio.create_task(announce_event(event_data))
+
 
     if delay_seconds > 0:
         await interaction.followup.send(f"⏳ Event '{name}' will be posted in {delay_seconds} seconds.")
@@ -568,9 +612,6 @@ async def on_raw_reaction_remove(payload):
 keep_alive()
 print("🔁 Starting bot...")
 bot.run(os.getenv("DISCORD_TOKEN"))
-
-port = int(os.environ.get("PORT", 8080))  # Use Render's assigned port or default to 8080
-app.run(host='0.0.0.0', port=port)
 
 port = int(os.environ.get("PORT", 8080))  # Use Render's assigned port or default to 8080
 app.run(host='0.0.0.0', port=port)
