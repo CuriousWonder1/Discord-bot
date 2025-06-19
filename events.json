@@ -820,13 +820,13 @@
         "channel_id": 845476433542905907
     },
     {
-        "name": "test 1",
-        "info": "test 1",
+        "name": "test 1 edti",
+        "info": "test 1 edit",
         "reward1": "",
         "reward2": "",
         "reward3": "",
         "participation_reward": "",
-        "start_time": "2025-06-19T04:13:28.539646+00:00",
+        "start_time": "2025-06-19T04:10:44.293008+00:00",
         "started": false,
         "creator": {
             "id": 966933822522396722,
