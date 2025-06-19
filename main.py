@@ -283,7 +283,7 @@ async def editevent(interaction: discord.Interaction):
 # Reschedule announcement for updated event
                         schedule_announcement(original_index, event)
 
-                            await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
+                        await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
 
 
             await select_interaction.response.send_modal(EditModal())
