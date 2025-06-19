@@ -1058,5 +1058,20 @@
             "name": "curiouswonders"
         },
         "channel_id": 845476433542905907
+    },
+    {
+        "name": "test today",
+        "info": "test",
+        "reward1": "",
+        "reward2": "",
+        "reward3": "",
+        "participation_reward": "",
+        "start_time": "2025-06-19T05:44:36.815494+00:00",
+        "started": false,
+        "creator": {
+            "id": 966933822522396722,
+            "name": "curiouswonders"
+        },
+        "channel_id": 845476433542905907
     }
 ]
