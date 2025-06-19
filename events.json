@@ -835,13 +835,13 @@
         "channel_id": 845476433542905907
     },
     {
-        "name": "test 1",
+        "name": "test 1 edit",
         "info": "test 1",
         "reward1": "",
         "reward2": "",
         "reward3": "",
         "participation_reward": "",
-        "start_time": "2025-06-19T04:16:52.567914+00:00",
+        "start_time": "2025-06-19T04:15:07.552653+00:00",
         "started": false,
         "creator": {
             "id": 966933822522396722,
