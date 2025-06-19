@@ -498,7 +498,13 @@ async def editevent(interaction: discord.Interaction):
             return start
         return None
 
-
+async def bot_reacted_to_message(message):
+    for reaction in message.reactions:
+        if reaction.emoji == "✅":
+            async for user in reaction.users():
+                if user.id == bot.user.id:
+                    return True
+    return False
 
 @bot.event
 async def on_raw_reaction_add(payload):
