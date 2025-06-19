@@ -505,31 +505,25 @@ async def on_raw_reaction_add(payload):
     if payload.emoji.name != "✅" or payload.user_id == bot.user.id:
         return
 
+    channel = bot.get_channel(payload.channel_id)
+    if not channel:
+        return
+    try:
+        message = await channel.fetch_message(payload.message_id)
+    except:
+        return
+
+    if not await bot_reacted_to_message(message):
+        return
+
     guild = bot.get_guild(payload.guild_id)
     if not guild:
         return
-
-    channel = guild.get_channel(payload.channel_id)
-    if not channel:
-        return
-
-    try:
-        message = await channel.fetch_message(payload.message_id)
-    except Exception:
-        return
-
-    # Only give role if the bot has already reacted with ✅
-    bot_reacted = any(
-        reaction.emoji == "✅" and any(user.id == bot.user.id async for user in reaction.users())
-        for reaction in message.reactions
-    )
-    if not bot_reacted:
-        return  # Bot hasn't reacted yet — don't assign role
-
     member = guild.get_member(payload.user_id)
+    if not member:
+        return
     role = discord.utils.get(guild.roles, name="Participant")
-
-    if member and role and role not in member.roles:
+    if role and role not in member.roles:
         await member.add_roles(role)
         print(f"✅ Assigned Participant role to {member.display_name}")
 
