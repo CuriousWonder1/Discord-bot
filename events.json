@@ -700,13 +700,13 @@
         "channel_id": 845476433542905907
     },
     {
-        "name": "June 27th Final Test",
-        "info": "27th Final Test",
+        "name": "June 27th Final Test edit 1",
+        "info": "27th Final Test edited",
         "reward1": "",
         "reward2": "",
         "reward3": "",
-        "participation_reward": "",
-        "start_time": "2025-06-19T02:43:30.071456+00:00",
+        "participation_reward": "100",
+        "start_time": "2025-06-19T02:39:53.983265+00:00",
         "started": false,
         "creator": {
             "id": 966933822522396722,
