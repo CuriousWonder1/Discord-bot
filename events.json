@@ -730,13 +730,13 @@
         "channel_id": 845476433542905907
     },
     {
-        "name": "test",
+        "name": "test edit",
         "info": "test 2m",
         "reward1": "",
         "reward2": "",
         "reward3": "",
         "participation_reward": "",
-        "start_time": "2025-06-19T02:51:24.512735+00:00",
+        "start_time": "2025-06-19T02:50:53.097499+00:00",
         "started": false,
         "creator": {
             "id": 966933822522396722,
