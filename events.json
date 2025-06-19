@@ -1075,13 +1075,13 @@
         "channel_id": 845476433542905907
     },
     {
-        "name": "tst",
-        "info": "test",
+        "name": "tst of the editing",
+        "info": "test edit",
         "reward1": "",
         "reward2": "",
         "reward3": "",
-        "participation_reward": "",
-        "start_time": "2025-06-19T05:47:32.847221+00:00",
+        "participation_reward": "50",
+        "start_time": "2025-06-19T05:45:50.469085+00:00",
         "started": false,
         "creator": {
             "id": 966933822522396722,
