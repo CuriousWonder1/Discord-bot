@@ -138,6 +138,15 @@ def parse_time_delay(time_str: str) -> int:
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
 
 async def announce_event(event):
+    # Reload the latest event data before continuing
+    all_events = load_events()
+    updated_event = next((e for e in all_events if e.get("name") == event["name"] and e["creator"]["id"] == event["creator"]["id"]), None)
+    if not updated_event:
+        print(f"❌ Event '{event['name']}' no longer exists or was renamed.")
+        return
+
+    event = updated_event  # Use the latest version
+
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
     if delay > 0:
