@@ -692,7 +692,7 @@
         "reward3": "",
         "participation_reward": "",
         "start_time": "2025-06-19T02:37:31.633851+00:00",
-        "started": false,
+        "started": true,
         "creator": {
             "id": 966933822522396722,
             "name": "curiouswonders"
