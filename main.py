@@ -27,6 +27,9 @@ from discord import app_commands
 
 app = Flask(__name__)
 
+
+scheduled_tasks = {}  # key: event index in the `events` list, value: asyncio.Task
+
 @app.route('/')
 def home():
     print("\U0001F501 Ping received from UptimeRobot (or browser)")
@@ -75,6 +78,16 @@ def fetch_github_events():
         print(f"\u274C Failed to fetch events.json: {response.status_code}")
         print("Response:", response.text)
         return []
+def schedule_announcement(index, event):
+    # Cancel previous task if exists
+    old_task = scheduled_tasks.get(index)
+    if old_task and not old_task.done():
+        old_task.cancel()
+        print(f"Cancelled previous announcement task for event '{event['name']}' at index {index}")
+
+    # Schedule new announcement task
+    task = bot.loop.create_task(announce_event(event))
+    scheduled_tasks[index] = task
 
 def commit_github_events(data):
     token = os.getenv("GITHUB_TOKEN")
@@ -193,11 +206,12 @@ async def announce_event(event):
 
 async def schedule_upcoming_events():
     now = datetime.now(tz=timezone.utc)
-    for event in events:
+    global events
+    for idx, event in enumerate(events):
         if isinstance(event["start_time"], str):
             event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
-            bot.loop.create_task(announce_event(event))
+            schedule_announcement(idx, event)
 
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
@@ -260,12 +274,17 @@ async def editevent(interaction: discord.Interaction):
                             return
 
                     # Update the event in the main list and save
-                    current_events[original_index] = event
-                    global events
-                    events = current_events
-                    save_events()
+# Update the event in the main list and save
+                        current_events[original_index] = event
+                        global events
+                        events = current_events
+                        save_events()
 
-                    await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
+# Reschedule announcement for updated event
+                        schedule_announcement(original_index, event)
+
+                            await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
+
 
             await select_interaction.response.send_modal(EditModal())
 
