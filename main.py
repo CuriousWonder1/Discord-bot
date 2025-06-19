@@ -40,8 +40,6 @@ def keep_alive():
     t.daemon = True
     t.start()
 
-scheduled_tasks = []
-
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
@@ -140,15 +138,6 @@ def parse_time_delay(time_str: str) -> int:
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
 
 async def announce_event(event):
-    # Reload the latest event data before continuing
-    all_events = load_events()
-    updated_event = next((e for e in all_events if e.get("name") == event["name"] and e["creator"]["id"] == event["creator"]["id"]), None)
-    if not updated_event:
-        print(f"❌ Event '{event['name']}' no longer exists or was renamed.")
-        return
-
-    event = updated_event  # Use the latest version
-
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
     if delay > 0:
@@ -203,20 +192,12 @@ async def announce_event(event):
     print(f"Event announced: {event['name']}")
 
 async def schedule_upcoming_events():
-    global scheduled_tasks
-    # Cancel any existing scheduled announce_event tasks
-    for task in scheduled_tasks:
-        task.cancel()
-    scheduled_tasks.clear()
-
     now = datetime.now(tz=timezone.utc)
-    latest_events = load_events()
-    for event in latest_events:
+    for event in events:
         if isinstance(event["start_time"], str):
             event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
-            task = bot.loop.create_task(announce_event(event))
-            scheduled_tasks.append(task)
+            bot.loop.create_task(announce_event(event))
 
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
@@ -283,8 +264,6 @@ async def editevent(interaction: discord.Interaction):
                     global events
                     events = current_events
                     save_events()
-
-                    await schedule_upcoming_events()
 
                     await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
 
@@ -368,7 +347,7 @@ async def deleteevent(interaction: discord.Interaction):
 
     await interaction.followup.send("Select the event to delete:", view=DeleteView(), ephemeral=True)
 
-    
+
 @bot.tree.command(name="createevent", description="Create an event", guild=discord.Object(id=GUILD_ID))
 @staff_only()
 async def createevent(interaction: discord.Interaction, name: str, info: str, delay: str = "0s", reward1: str = "", reward2: str = "", reward3: str = "", participation_reward: str = ""):
@@ -519,6 +498,7 @@ async def editevent(interaction: discord.Interaction):
             return start
         return None
 
+
 async def bot_reacted_to_message(message):
     for reaction in message.reactions:
         if reaction.emoji == "✅":
@@ -569,6 +549,9 @@ async def on_raw_reaction_remove(payload):
 keep_alive()
 print("🔁 Starting bot...")
 bot.run(os.getenv("DISCORD_TOKEN"))
+
+port = int(os.environ.get("PORT", 8080))  # Use Render's assigned port or default to 8080
+app.run(host='0.0.0.0', port=port)
 
 port = int(os.environ.get("PORT", 8080))  # Use Render's assigned port or default to 8080
 app.run(host='0.0.0.0', port=port)
