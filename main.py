@@ -40,6 +40,8 @@ def keep_alive():
     t.daemon = True
     t.start()
 
+scheduled_tasks = []
+
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
@@ -201,12 +203,20 @@ async def announce_event(event):
     print(f"Event announced: {event['name']}")
 
 async def schedule_upcoming_events():
+    global scheduled_tasks
+    # Cancel any existing scheduled announce_event tasks
+    for task in scheduled_tasks:
+        task.cancel()
+    scheduled_tasks.clear()
+
     now = datetime.now(tz=timezone.utc)
-    for event in events:
+    latest_events = load_events()
+    for event in latest_events:
         if isinstance(event["start_time"], str):
             event["start_time"] = datetime.fromisoformat(event["start_time"])
         if not event.get("started", False) and event["start_time"] > now:
-            bot.loop.create_task(announce_event(event))
+            task = bot.loop.create_task(announce_event(event))
+            scheduled_tasks.append(task)
 
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
@@ -273,6 +283,8 @@ async def editevent(interaction: discord.Interaction):
                     global events
                     events = current_events
                     save_events()
+
+                    await schedule_upcoming_events()
 
                     await modal_interaction.response.send_message(f"✅ Event **{event['name']}** has been updated!", ephemeral=True)
 
