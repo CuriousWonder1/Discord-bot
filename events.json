@@ -1088,5 +1088,20 @@
             "name": "curiouswonders"
         },
         "channel_id": 845476433542905907
+    },
+    {
+        "name": "Affirm Yes",
+        "info": "This is for upper event",
+        "reward1": "",
+        "reward2": "",
+        "reward3": "",
+        "participation_reward": "",
+        "start_time": "2025-07-19T23:26:58.447442+00:00",
+        "started": false,
+        "creator": {
+            "id": 739237176109170689,
+            "name": "hakakatyt"
+        },
+        "channel_id": 1068860741916053564
     }
 ]
