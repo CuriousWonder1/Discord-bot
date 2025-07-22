@@ -492,7 +492,7 @@ async def end(interaction: discord.Interaction):
     if upcoming:
         description_text += "🗓️ **Current Upcoming Events:**"
     else:
-        description_text += "🚫 **There are currently no upcoming events scheduled.**"
+        description_text += "🚫 **There are currently no upcoming events scheduled via the bot.**"
 
     embed = discord.Embed(
         title="🎉 Event Information",
@@ -517,6 +517,33 @@ async def end(interaction: discord.Interaction):
         await interaction.channel.send(embed=embed)
     except discord.InteractionResponded:
         pass
+
+@bot.tree.command(name="eventroler", description="Send an Event Roler message to the current channel", guild=discord.Object(id=GUILD_ID))
+@staff_only()
+async def eventroler(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+
+    # Send immediately
+    channel = interaction.channel
+
+    embed = discord.Embed(
+        title="AFFIRM YES",
+        description="This is for the event above",
+        color=discord.Color.blue()
+    )
+
+    embed.add_field(
+        name="",
+        value="To participate in this event, tick the reaction below and you will be given the Participant role.",
+        inline=False
+    )
+
+    embed.set_footer(text=f"Created by {interaction.user}")
+
+    message = await channel.send(embed=embed)
+    await message.add_reaction("\u2705")
+
+    await interaction.followup.send(f"✅ 'AFFIRM YES' prompt sent to this channel.", ephemeral=True)
 
 
 @bot.tree.command(name="events", description="Shows all upcoming events", guild=discord.Object(id=GUILD_ID))
