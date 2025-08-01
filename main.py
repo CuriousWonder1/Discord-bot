@@ -651,7 +651,10 @@ async def on_raw_reaction_add(payload):
     if not guild:
         return
     member = guild.get_member(payload.user_id)
-    if not member:
+if not member:
+    try:
+        member = await guild.fetch_member(payload.user_id)
+    except discord.NotFound:
         return
     role = discord.utils.get(guild.roles, name="Participant")
     if role and role not in member.roles:
