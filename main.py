@@ -140,7 +140,7 @@ def parse_time_delay(time_str: str) -> int:
     value, unit = match.groups()
     value = int(value)
     return value * {"s":1, "m":60, "h":3600, "d":86400}[unit]
-    
+
 async def announce_event(event):
     now = datetime.now(tz=timezone.utc)
     delay = (event["start_time"] - now).total_seconds()
@@ -652,11 +652,7 @@ async def on_raw_reaction_add(payload):
         return
     member = guild.get_member(payload.user_id)
     if not member:
-        try:
-            member = await guild.fetch_member(payload.user_id)
-        except discord.NotFound:
-            return
-            
+        return
     role = discord.utils.get(guild.roles, name="Participant")
     if role and role not in member.roles:
         await member.add_roles(role)
