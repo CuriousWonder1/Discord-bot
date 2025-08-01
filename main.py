@@ -239,7 +239,41 @@ async def periodic_event_sync():
         await schedule_upcoming_events()
 
         await asyncio.sleep(30)
+        
+@bot.tree.command(name="rolemessage", description="Give the Participant role to users who ticked the first reaction", guild=discord.Object(id=GUILD_ID))
+@staff_only()
+@app_commands.describe(message_id="The ID of the message to scan for reactions")
+async def rolemessage(interaction: discord.Interaction, message_id: str):
+    await interaction.response.defer(ephemeral=True)
 
+    channel = interaction.channel
+    try:
+        message = await channel.fetch_message(int(message_id))
+    except Exception as e:
+        await interaction.followup.send(f"❌ Failed to fetch message: {e}", ephemeral=True)
+        return
+
+    role = discord.utils.get(interaction.guild.roles, name="Participant")
+    if not role:
+        await interaction.followup.send("❌ 'Participant' role not found.", ephemeral=True)
+        return
+
+    if not message.reactions:
+        await interaction.followup.send("❌ No reactions found on the message.", ephemeral=True)
+        return
+
+    first_reaction = message.reactions[0]
+    assigned_users = set()
+
+    async for user in first_reaction.users():
+        if user.bot:
+            continue
+        member = interaction.guild.get_member(user.id)
+        if member and role not in member.roles:
+            await member.add_roles(role)
+            assigned_users.add(user.id)
+
+    await interaction.followup.send(f"✅ Assigned 'Participant' role to {len(assigned_users)} users who reacted to the message's first reaction.", ephemeral=True)
 
 @bot.tree.command(name="editevent", description="Edit one of your scheduled events", guild=discord.Object(id=GUILD_ID))
 @staff_only()
