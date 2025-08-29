@@ -14,6 +14,8 @@ from discord import SelectOption
 GUILD_ID = 457619956687831050
 EVENTS_FILE = "events.json"
 STAFF_ROLE_IDS = {578725917258416129, 879592909203197952}
+NOTIFIER_ROLE_ID = 828406807285202974
+PARTICIPANT_ROLE_ID = 1048722332165873844
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -646,6 +648,37 @@ async def end(interaction: discord.Interaction):
         await interaction.channel.send(embed=embed)
     except discord.InteractionResponded:
         pass
+        
+
+@bot.tree.command(
+    name="eventping",
+    description="Ping the Event Notifier role",
+    guild=discord.Object(id=GUILD_ID)
+)
+@staff_only()
+async def eventping(interaction: discord.Interaction):
+    role = interaction.guild.get_role(NOTIFIER_ROLE_ID)
+    if role is None:
+        await interaction.response.send_message(
+            "❌ Event Notifier role not found. Check the ID.", ephemeral=True
+        )
+        return
+    await interaction.response.send_message(f"{role.mention}")
+
+@bot.tree.command(
+    name="participantping",
+    description="Ping the Participant role",
+    guild=discord.Object(id=GUILD_ID)
+)
+@staff_only()
+async def participantping(interaction: discord.Interaction):
+    role = interaction.guild.get_role(PARTICIPANT_ROLE_ID)
+    if role is None:
+        await interaction.response.send_message(
+            "❌ Participant role not found. Check the ID.", ephemeral=True
+        )
+        return
+    await interaction.response.send_message(f"{role.mention}")
 
 
 @bot.tree.command(
@@ -676,7 +709,6 @@ async def eventroler(interaction: discord.Interaction):
 
     await interaction.followup.send(
         f"✅ 'AFFIRM YES' prompt sent to this channel.", ephemeral=True)
-
 
 @bot.tree.command(name="events",
                   description="Shows all upcoming events",
