@@ -663,7 +663,12 @@ async def eventping(interaction: discord.Interaction):
             "❌ Event Notifier role not found. Check the ID.", ephemeral=True
         )
         return
-    await interaction.response.send_message(f"{role.mention}")
+
+    # Send an ephemeral confirmation to staff first
+    await interaction.response.send_message("✅ Event ping sent!", ephemeral=True)
+
+    # Then send the actual ping to the channel
+    await interaction.followup.send(f"{role.mention}", allowed_mentions=discord.AllowedMentions(roles=True))
 
 @bot.tree.command(
     name="participantping",
@@ -678,7 +683,15 @@ async def participantping(interaction: discord.Interaction):
             "❌ Participant role not found. Check the ID.", ephemeral=True
         )
         return
-    await interaction.response.send_message(f"{role.mention}")
+
+    # Confirm to staff privately
+    await interaction.response.send_message("✅ Participant ping sent!", ephemeral=True)
+
+    # Send actual ping to the channel
+    await interaction.followup.send(
+        f"{role.mention}",
+        allowed_mentions=discord.AllowedMentions(roles=True)
+    )
 
 
 @bot.tree.command(
