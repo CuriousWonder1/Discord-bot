@@ -1,34 +1,4 @@
 {
-  "2025-9": [
-    {
-      "range": "1-7 September 2025",
-      "slots": [
-        null,
-        null
-      ]
-    },
-    {
-      "range": "8-14 September 2025",
-      "slots": [
-        null,
-        null
-      ]
-    },
-    {
-      "range": "15-21 September 2025",
-      "slots": [
-        null,
-        null
-      ]
-    },
-    {
-      "range": "22-30 September 2025",
-      "slots": [
-        null,
-        null
-      ]
-    }
-  ],
   "2025-10": [
     {
       "range": "1-7 October 2025",
@@ -53,6 +23,36 @@
     },
     {
       "range": "22-31 October 2025",
+      "slots": [
+        null,
+        null
+      ]
+    }
+  ],
+  "2025-11": [
+    {
+      "range": "1-7 November 2025",
+      "slots": [
+        null,
+        null
+      ]
+    },
+    {
+      "range": "8-14 November 2025",
+      "slots": [
+        null,
+        null
+      ]
+    },
+    {
+      "range": "15-21 November 2025",
+      "slots": [
+        "f3iy (@ Friendly When On PC)",
+        null
+      ]
+    },
+    {
+      "range": "22-30 November 2025",
       "slots": [
         null,
         null
