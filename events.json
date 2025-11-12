@@ -1142,7 +1142,7 @@
         "reward3": "",
         "participation_reward": "",
         "start_time": "2025-11-12T00:57:00.312492+00:00",
-        "started": false,
+        "started": true,
         "creator": {
             "id": 966933822522396722,
             "name": "curiouswonders"
