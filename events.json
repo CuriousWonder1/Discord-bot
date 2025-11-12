@@ -1125,7 +1125,7 @@
         "reward1": "100",
         "reward2": "80",
         "reward3": "60",
-        "participation_reward": "10",
+        "participation_reward": "100",
         "start_time": "2026-02-20T00:49:47.570529+00:00",
         "started": false,
         "creator": {
